@@ -3,34 +3,13 @@
 CREATE COMPUTE MODULE SimpleMQBackendFlow_Compute
 	CREATE FUNCTION Main() RETURNS BOOLEAN
 	BEGIN
-		-- CALL CopyMessageHeaders();
-		 CALL CopyEntireMessage();
-		 
-		 CREATE LASTCHILD OF Environment NAME 'Variables';
-         DECLARE rEnv REFERENCE TO Environment.Variables;
-  
-         SET rEnv.HTTPRequestIdentifier = InputLocalEnvironment.Destination.HTTP.RequestIdentifier;
-         SET OutputRoot.HTTPInputHeader = NULL;
-         
-         CREATE LASTCHILD OF OutputRoot DOMAIN('MQMD');
-         SET OutputRoot.MQMD.StrucId = MQMD_STRUC_ID; 
-         SET OutputRoot.MQMD.CorrelId= Environment.Variables.HTTPRequestIdentifier;
-         SET OutputRoot.MQMD.MsgId= Environment.Variables.HTTPRequestIdentifier;
-         
+         SET Environment.Variables.HTTPRequestIdentifier = InputLocalEnvironment.Destination.HTTP.RequestIdentifier;
+
+		 SET OutputRoot.Properties = InputProperties;   
+		 SET OutputRoot.Properties.ReplyIdentifier = Environment.Variables.HTTPRequestIdentifier;
+         SET OutputRoot.MQMD.CorrelId= Environment.Variables.HTTPRequestIdentifier; -- Overridden by Properties.ReplyIdentifier
+         SET OutputRoot.MQMD.MsgId   = Environment.Variables.HTTPRequestIdentifier;
+         SET OutputRoot.XMLNSC = InputRoot.XMLNSC;
 		RETURN TRUE;
-	END;
-
-	CREATE PROCEDURE CopyMessageHeaders() BEGIN
-		DECLARE I INTEGER 1;
-		DECLARE J INTEGER;
-		SET J = CARDINALITY(InputRoot.*[]);
-		WHILE I < J DO
-			SET OutputRoot.*[I] = InputRoot.*[I];
-			SET I = I + 1;
-		END WHILE;
-	END;
-
-	CREATE PROCEDURE CopyEntireMessage() BEGIN
-		SET OutputRoot = InputRoot;
 	END;
 END MODULE;
